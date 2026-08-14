@@ -18,6 +18,8 @@ public_html/hot
 storage/*.key
 .idea
 .gigacode
+CLAUDE.md
+.gigaide
 .env
 Homestead.yaml
 Homestead.json
