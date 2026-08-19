@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('description');
             $table->string('image');
             $table->boolean('is_active');
-            $table->foreignId('parent_category_id')->nullable()->constrained('categories')->nullOnDelete();
-            $table->index('parent_category_id');
+            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
+            $table->index('category_id');
             $table->timestamps();
         });
     }

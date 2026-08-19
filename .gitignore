@@ -21,6 +21,7 @@ storage/*.key
 CLAUDE.md
 .gigaide
 .env
+.claude-docs
 Homestead.yaml
 Homestead.json
 /.vagrant
