@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('slug')->unique();
             $table->string('description');
-            $table->string('image');
-            $table->boolean('is_active');
-            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
-            $table->index('category_id');
+            $table->string('image')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('parent_id')->nullable()->constrained('categories')->nullOnDelete();
+            $table->index('parent_id');
             $table->timestamps();
         });
     }
