@@ -63,13 +63,18 @@
 }
 
 @layer components {
-    /* Кнопки */
-    .btn {
+    /* Кнопки.
+       В Tailwind v4 @apply не умеет ссылаться на собственный класс,
+       поэтому базовые стили задаём сразу для всех вариантов. */
+    .btn,
+    .btn-accent,
+    .btn-dark,
+    .btn-outline {
         @apply inline-flex items-center justify-center gap-2 rounded-btn px-7 py-3.5 text-[15px] font-bold transition-colors duration-200 text-center;
     }
-    .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark; }
-    .btn-dark   { @apply btn bg-ink text-white hover:bg-black; }
-    .btn-outline{ @apply btn border border-ink bg-transparent text-ink hover:bg-ink hover:text-white; }
+    .btn-accent { @apply bg-accent text-white hover:bg-accent-dark; }
+    .btn-dark   { @apply bg-ink text-white hover:bg-black; }
+    .btn-outline{ @apply border border-ink bg-transparent text-ink hover:bg-ink hover:text-white; }
 
     /* Поля ввода */
     .field {
