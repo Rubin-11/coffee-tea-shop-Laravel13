@@ -2,25 +2,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@yield('title', 'Coffee-Tea Shop — свежеобжаренный кофе и премиальный чай')</title>
+    <meta name="description" content="@yield('meta_description', 'Интернет-магазин свежеобжаренного кофе и премиального чая с доставкой по России.')">
+
+    {{-- Шрифт Onest — близкий аналог Gilroy из макета --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @yield('styles')   {{-- сюда переедут стили страницы --}}
-    <title>@yield('title')</title>
+    @stack('styles')
 </head>
-<body>
+<body class="flex min-h-screen flex-col bg-white font-sans text-body antialiased">
 
-@include('components.header')    {{-- шапка --}}
+    @include('components.header')
 
-<main>
-    @yield('content')            {{-- ← сюда ложится контент из @section('content') --}}
-</main>
+    <main class="flex-1">
+        @yield('content')
+    </main>
 
-@include('components.footer')    {{-- подвал --}}
+    @include('components.footer')
 
-@yield('scripts')
+    @stack('scripts')
 </body>
 </html>
-
-

@@ -1,40 +1,82 @@
+{{-- Каталог категории (статичный демо-шаблон) --}}
 @extends('layouts.main-layout')
-@section('title', 'Каталог...')
-@section('content')
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-8">Каталог товаров</h1>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @foreach($products as $product)
-                <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
-                    <div class="h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <svg class="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
+@section('title', 'Каталог — свежеобжаренный кофе')
+
+@section('content')
+    @include('components.breadcrumbs')
+
+    <div class="wrap pb-16">
+        <h1 class="text-[34px] font-extrabold text-ink sm:text-[42px]">Свежеобжаренный кофе</h1>
+        <p class="mt-3 max-w-2xl text-body">Кофе из разных стран произрастания, обжаренный в Калининграде. Выберите сорт под свой вкус.</p>
+
+        <div class="mt-8 grid gap-8 lg:grid-cols-[280px_1fr]">
+            {{-- ===== Фильтры ===== --}}
+            <aside class="space-y-6">
+                <div class="rounded-card border border-line bg-white p-6 shadow-card">
+                    <div class="mb-4 flex items-center justify-between">
+                        <span class="text-lg font-bold text-ink">Фильтры</span>
+                        <a href="#" class="text-sm text-muted transition-colors hover:text-accent">Сбросить</a>
                     </div>
-                    <div class="p-5">
-                        <h3 class="text-lg font-bold text-gray-900 mb-2">{{ $product->name }}</h3>
-                        <p class="text-sm text-gray-600 mb-4 line-clamp-3">
-                            {{ $product->description ?? 'Описание товара отсутствует' }}
-                        </p>
-                        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                            <span class="text-amber-800 font-bold text-2xl">{{ $product->price }} ₽</span>
-                            <button class="bg-amber-800 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                В корзину
-                            </button>
+
+                    <div class="space-y-2">
+                        <div class="text-sm font-bold uppercase tracking-wide text-muted">Категории</div>
+                        <label class="flex items-center gap-2 text-body"><input type="radio" name="cat" class="accent-accent" checked> Свежеобжаренный кофе</label>
+                        <label class="flex items-center gap-2 text-body"><input type="radio" name="cat" class="accent-accent"> Чай и кофейные напитки</label>
+                        <label class="flex items-center gap-2 text-body"><input type="radio" name="cat" class="accent-accent"> Продукция для вендинга</label>
+                        <label class="flex items-center gap-2 text-body"><input type="radio" name="cat" class="accent-accent"> Здоровое питание</label>
+                    </div>
+
+                    <hr class="my-5 border-line">
+
+                    <div class="space-y-2">
+                        <div class="text-sm font-bold uppercase tracking-wide text-muted">Цена, ₽</div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" placeholder="от" class="field py-2.5">
+                            <span class="text-muted">—</span>
+                            <input type="number" placeholder="до" class="field py-2.5">
                         </div>
                     </div>
-                </div>
-            @endforeach
-        </div>
 
-        <div class="mt-8">
-            {{ $products->links('components.pagination.tailwind') }}
+                    <hr class="my-5 border-line">
+
+                    <div class="space-y-2">
+                        <div class="text-sm font-bold uppercase tracking-wide text-muted">Обжарка</div>
+                        <label class="flex items-center gap-2 text-body"><input type="checkbox" class="rounded accent-accent"> Светлая</label>
+                        <label class="flex items-center gap-2 text-body"><input type="checkbox" class="rounded accent-accent"> Средняя</label>
+                        <label class="flex items-center gap-2 text-body"><input type="checkbox" class="rounded accent-accent"> Тёмная</label>
+                    </div>
+
+                    <button type="button" class="btn-accent mt-6 w-full">Применить</button>
+                </div>
+            </aside>
+
+            {{-- ===== Сетка товаров ===== --}}
+            <div>
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <span class="text-sm text-muted">Найдено 48 товаров</span>
+                    <label class="flex items-center gap-2 text-sm text-body">
+                        Сортировка:
+                        <select class="field py-2.5 pr-8">
+                            <option>По популярности</option>
+                            <option>Сначала дешёвые</option>
+                            <option>Сначала дорогие</option>
+                            <option>По рейтингу</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    @include('components.product-card')
+                    @include('components.product-card')
+                    @include('components.product-card')
+                    @include('components.product-card')
+                    @include('components.product-card')
+                    @include('components.product-card')
+                </div>
+
+                @include('components.pagination')
+            </div>
         </div>
     </div>
 @endsection
