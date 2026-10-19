@@ -13,11 +13,25 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            // NULL — гостевой заказ или пользователь удалён: заказ при этом остаётся в истории
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('order_number')->unique();
             $table->decimal('price', 10, 2);
             $table->enum('payment_method', ['cash', 'card']);
-            $table->string('address');
+
+            // Контакты покупателя — копия на момент заказа, не зависит от users
+            $table->string('customer_name');
+            $table->string('customer_email');
+            $table->string('customer_phone', 20);
+
+            // Адрес доставки — копия на момент заказа, не зависит от user_addresses
+            $table->string('country');
+            $table->string('region');
+            $table->string('city');
+            $table->string('street');
+            $table->string('house_number');
+            $table->string('flat_number')->nullable(); // в частном доме квартиры нет
+
             $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');
             $table->index('user_id');
             $table->timestamps();

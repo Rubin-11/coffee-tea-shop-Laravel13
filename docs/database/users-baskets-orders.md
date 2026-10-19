@@ -43,9 +43,38 @@ Sche[features](../features)ma::create('baskets', function (Blueprint $table) {
 
 ## `orders` / `orders_products`
 
-`orders`: `user_id` (FK, cascade), `order_number` (unique), `price`, `payment_method`
-(enum: `cash`/`card`), `address`, `status` (enum: `pending`/`processing`/`completed`/`cancelled`,
-по умолчанию `pending`).
+| Колонка | Тип | Примечание |
+|---|---|---|
+| `user_id` | nullable FK → `users.id`, `nullOnDelete` | `NULL` у гостевого заказа и у заказа удалённого пользователя |
+| `order_number` | string, unique | |
+| `price` | decimal(10,2) | итоговая сумма заказа |
+| `payment_method` | enum `cash`/`card` | |
+| `customer_name`, `customer_email`, `customer_phone` | string (телефон до 20 символов) | контакты покупателя на момент заказа |
+| `country`, `region`, `city`, `street`, `house_number` | string | адрес доставки на момент заказа |
+| `flat_number` | string, nullable | в частном доме квартиры нет |
+| `status` | enum `pending`/`processing`/`completed`/`cancelled`, default `pending` | |
+
+### Почему заказ хранит копию контактов и адреса (изменено 2026-10-19)
+
+Раньше было `user_id ... onDelete('cascade')` и одна строка `address`. Удаление пользователя
+стирало всю историю его заказов, а без пользователя в заказе не оставалось ни имени, ни
+телефона: менеджеру некому позвонить.
+
+Теперь заказ самодостаточен, по той же идее, что и снапшот цены в `orders_products`:
+- `nullOnDelete()`: при удалении пользователя Postgres выставляет `user_id = NULL`
+  (`ON DELETE SET NULL`), а сам заказ остаётся в отчётах;
+- `nullable()` нужен для этого же поведения и заодно разрешает гостевые заказы на уровне
+  БД. Можно ли гостю оформлять заказ, решит логика оформления (этап 7), схема это
+  поддерживает;
+- контакты и адрес копируются в заказ при оформлении. Если пользователь потом поменяет
+  телефон или адрес в `user_addresses`, старые заказы останутся с теми данными, по которым
+  их реально доставляли. У гостя строк в `user_addresses` нет, поэтому ссылка на адрес ему
+  бы не подошла.
+- адрес хранится по полям (как в `user_addresses`), а не одной строкой, чтобы его было
+  легко скопировать из сохранённого адреса и фильтровать заказы, например, по городу.
+
+В модели `Order` задан `#[Fillable]` со всеми этими полями, кроме `status`: при создании
+заказ получает `pending` по умолчанию, а статус меняет только админка.
 
 `orders_products` — пивот `orders` ↔ `products`, с `unique(['order_id', 'product_id'])` и
 собственными `quantity`/`price` в пивоте — это **снапшот** цены товара на момент заказа, а

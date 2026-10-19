@@ -23,7 +23,7 @@ baskets.user_id → users.id (nullable)        \
 baskets.product_id → products.id              } гость (session_id) или юзер (user_id) в одной таблице
 baskets.session_id (nullable)                /
 user_addresses.user_id → users.id
-orders.user_id → users.id
+orders.user_id → users.id (nullable, nullOnDelete: заказ переживает удаление пользователя)
 orders_products: orders ↔ products           (многие-ко-многим, со снапшотом цены/количества)
 ```
 
