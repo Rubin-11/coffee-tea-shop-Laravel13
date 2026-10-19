@@ -23,8 +23,10 @@ class Order extends Model
 
     public function products(): BelongsToMany
     {
+        // withTrashed(): мягко удалённые товары не должны пропадать из состава старых заказов
         return $this->belongsToMany(Product::class, 'orders_products', 'order_id', 'product_id')
-            ->withPivot('quantity', 'price')
+            ->withTrashed()
+            ->withPivot('product_name', 'quantity', 'price')
             ->withTimestamps();
     }
 }

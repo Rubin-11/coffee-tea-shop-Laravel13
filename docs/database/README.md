@@ -16,7 +16,7 @@
 
 ```
 categories.parent_id → categories.id        (self-join, дерево категорий)
-products.category_id → categories.id
+products.category_id → categories.id       (restrictOnDelete; products мягко удаляются через deleted_at)
 product_images.product_id → products.id
 product_properties: products ↔ properties   (многие-ко-многим)
 baskets.user_id → users.id (nullable)        \

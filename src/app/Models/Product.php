@@ -7,10 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['category_id', 'name', 'slug', 'description','price', 'quantity', 'reviews_count'])]
 class Product extends Model
 {
+    // delete() ставит deleted_at вместо удаления строки; все запросы Product:: по умолчанию скрывают такие товары
+    use SoftDeletes;
+
+    protected static function booted(): void
+    {
+        // Удалённый товар больше нельзя купить — убираем его из всех корзин
+        static::deleted(function (Product $product) {
+            Basket::where('product_id', $product->id)->delete();
+        });
+    }
+
     public function productsImages(): HasMany
     {
         return $this->hasMany(ProductImage::class);
@@ -31,7 +43,7 @@ class Product extends Model
     public function orders(): BelongsToMany
     {
         return $this->belongsToMany(Order::class, 'orders_products', 'product_id', 'order_id')
-            ->withPivot('quantity', 'price')
+            ->withPivot('product_name', 'quantity', 'price')
             ->withTimestamps();
     }
 

@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained('categories');
+            // Категорию с товарами (в том числе мягко удалёнными) удалить нельзя — сначала перенести товары
+            $table->foreignId('category_id')->constrained('categories')->restrictOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
             $table->string('description');
@@ -22,6 +23,8 @@ return new class extends Migration
             $table->integer('reviews_count')->default(0);
             $table->index('category_id');
             $table->timestamps();
+            // deleted_at: мягкое удаление — товар скрыт с витрины, но строка остаётся для истории заказов
+            $table->softDeletes();
         });
     }
 

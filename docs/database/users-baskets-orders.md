@@ -77,9 +77,16 @@ Sche[features](../features)ma::create('baskets', function (Blueprint $table) {
 заказ получает `pending` по умолчанию, а статус меняет только админка.
 
 `orders_products` — пивот `orders` ↔ `products`, с `unique(['order_id', 'product_id'])` и
-собственными `quantity`/`price` в пивоте — это **снапшот** цены товара на момент заказа, а
-не ссылка на текущую цену в `products` (цена товара может потом измениться, в заказе должна
-остаться та, что была при покупке).
+собственными `product_name`/`quantity`/`price` в пивоте — это **снапшот** товара на момент
+заказа, а не ссылка на текущие название и цену в `products` (товар потом могут
+переименовать или изменить цену, в заказе должно остаться то, что было при покупке).
+
+Оба внешних ключа явно `restrictOnDelete()`:
+- `order_id`: заказ с позициями физически не удаляется, заказы отменяются через `status`;
+- `product_id`: товар из заказов физически не удаляется, только мягко (`deleted_at`), см.
+  [products-and-properties.md](products-and-properties.md#удаление-товара--мягкое-изменено-2026-10-19).
 
 Связи: `Order::user()`, `Order::products()` / `Product::orders()` (обе `BelongsToMany` через
-`orders_products`, с `withPivot('quantity', 'price')`).
+`orders_products`, с `withPivot('product_name', 'quantity', 'price')`). `Order::products()`
+дополнительно вызывает `withTrashed()`, чтобы мягко удалённые товары не пропадали из
+старых заказов.

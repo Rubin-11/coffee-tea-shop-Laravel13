@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders_products', function (Blueprint $table) {
-            $table->foreignId('order_id')->constrained('orders');
-            $table->foreignId('product_id')->constrained('products');
+            // Заказы не удаляются (отменяются статусом), поэтому физическое удаление заказа с позициями запрещено
+            $table->foreignId('order_id')->constrained('orders')->restrictOnDelete();
+            // Товар, который есть в заказах, физически удалить нельзя — только мягко (deleted_at)
+            $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
+            // Копия названия на момент заказа: переименование товара не меняет старые заказы
+            $table->string('product_name');
             $table->integer('quantity');
             $table->decimal('price', 10, 2);
             $table->unique(['order_id', 'product_id']);
