@@ -111,7 +111,7 @@ $propertyIds)` — берёт значения вместе с группами 
 сохранять характеристики админка.
 
 ### Фильтры каталога
-`CatalogController::PROPERTY_FILTERS` связывает параметр query string со slug группы:
+`CatalogFilterRequest::PROPERTY_FILTERS` связывает параметр query string со slug группы:
 `processing → processing-method`, `roast_level → roast-level`, `acidity`, `coffee_type →
 coffee-type`, `body`, `bitterness`. Один цикл вместо шести копий `where('name', 'Русская
 строка')`: товар подходит, если у него есть значение с `value IN (выбранные)` в группе с

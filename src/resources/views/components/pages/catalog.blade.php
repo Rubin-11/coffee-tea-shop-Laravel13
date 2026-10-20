@@ -27,6 +27,16 @@
                         <a href="{{ route('catalog', $category->slug) }}" class="text-sm text-muted transition-colors hover:text-accent">Сбросить</a>
                     </div>
 
+                    @if($errors->any())
+                        <div class="mb-4 rounded-btn border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <ul class="list-disc space-y-1 pl-4">
+                                @foreach($errors->unique() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form method="GET">
                     <div class="space-y-2">
                         <div class="text-sm font-bold uppercase tracking-wide text-muted">Цена, ₽</div>

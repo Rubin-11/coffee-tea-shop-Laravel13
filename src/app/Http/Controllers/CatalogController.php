@@ -4,21 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Http\Requests\CatalogFilterRequest;
 use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
-    // параметр query string => slug группы характеристик (property_groups.slug)
-    private const PROPERTY_FILTERS = [
-        'processing' => 'processing-method',
-        'roast_level' => 'roast-level',
-        'acidity' => 'acidity',
-        'coffee_type' => 'coffee-type',
-        'body' => 'body',
-        'bitterness' => 'bitterness',
-    ];
-
-    public function index(Request $request, string $slug)
+    public function index(CatalogFilterRequest $request, string $slug)
     {
         // Найти категорию по slug
         $category = Category::where('slug', $slug)->firstOrFail();
@@ -29,20 +20,23 @@ class CatalogController extends Controller
         // Главные категории — для переключателя над заголовком (как на главной)
         $categories = Category::whereNull('parent_id')->get();
 
-        // Получить все товары, соответствующей категории, с учётом фильтров из query string
+        // Только проверенные параметры фильтров: сырой ввод из query string в запрос не попадает
+        $filters = $request->validated();
+
+        // Получить все товары, соответствующей категории, с учётом фильтров
         $products = Product::with('category')
             ->whereIn('category_id', $childCategories->pluck('id')->push($category->id))
-            ->when($request->filled('price_min'), fn ($query) => $query->where('price', '>=', $request->price_min))
-            ->when($request->filled('price_max'), fn ($query) => $query->where('price', '<=', $request->price_max))
-            ->when($request->filled('subcategory'), fn ($query) => $query->whereIn(
-                'category_id', array_map('intval', $request->subcategory)
+            ->when(filled($filters['price_min'] ?? null), fn ($query) => $query->where('price', '>=', $filters['price_min']))
+            ->when(filled($filters['price_max'] ?? null), fn ($query) => $query->where('price', '<=', $filters['price_max']))
+            ->when(filled($filters['subcategory'] ?? null), fn ($query) => $query->whereIn(
+                'category_id', array_map('intval', $filters['subcategory'])
             ));
 
         // Внутри группы значения объединяются через ИЛИ, между группами — через И
-        foreach (self::PROPERTY_FILTERS as $param => $groupSlug) {
-            $products->when($request->filled($param), fn ($query) => $query->whereHas(
+        foreach (CatalogFilterRequest::PROPERTY_FILTERS as $param => $groupSlug) {
+            $products->when(filled($filters[$param] ?? null), fn ($query) => $query->whereHas(
                 'properties', fn ($p) => $p
-                    ->whereIn('properties.value', array_map('strval', (array) $request->input($param)))
+                    ->whereIn('properties.value', $filters[$param])
                     ->whereHas('group', fn ($g) => $g->where('slug', $groupSlug))
             ));
         }
