@@ -31,3 +31,11 @@ function productWith(App\Models\Category $category, array $properties = [], arra
 
     return $product;
 }
+
+// Проверяет, что БД отклонила операцию. Внутри RefreshDatabase тест живёт в транзакции, а Postgres после ошибки
+// считает её сломанной; вложенный DB::transaction() делает savepoint и откатывает только его
+function expectRejected(Closure $operation): void
+{
+    expect(fn () => Illuminate\Support\Facades\DB::transaction($operation))
+        ->toThrow(Illuminate\Database\QueryException::class);
+}
