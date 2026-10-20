@@ -43,6 +43,8 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      # скрипты из этой папки выполняются один раз, при создании пустого тома (создают БД для тестов)
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"  # Открыт для DBeaver, pgAdmin и т.п.
     networks:
