@@ -21,6 +21,8 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('price', 10, 2);
             $table->unique(['order_id', 'product_id']);
+            // Проверка RESTRICT при удалении товара и запрос «в каких заказах товар»; unique выше начинается с order_id
+            $table->index('product_id');
             $table->timestamps();
         });
     }

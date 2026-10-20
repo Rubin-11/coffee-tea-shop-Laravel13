@@ -21,6 +21,8 @@ return new class extends Migration
             $table->integer('quantity')->default(1);
             // Один товар — одна строка в корзине пользователя: повторное добавление увеличивает quantity
             $table->unique(['user_id', 'product_id']);
+            // Postgres не индексирует внешний ключ сам; нужен для удаления товара и поиска корзин с ним
+            $table->index('product_id');
             $table->timestamps();
         });
 
