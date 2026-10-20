@@ -36,7 +36,7 @@ class Product extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany( User::class, 'baskets', 'product_id', 'user_id')
-            ->withPivot('session_id','quantity' )
+            ->withPivot('quantity')
             ->withTimestamps();
     }
 

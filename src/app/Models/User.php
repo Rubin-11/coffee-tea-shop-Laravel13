@@ -37,9 +37,12 @@ class User extends Authenticatable
         return $this->hasMany(UserAddress::class);
     }
 
+    // Товары в корзине пользователя; количество — в $product->pivot->quantity
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'baskets', 'user_id', 'product_id');
+        return $this->belongsToMany(Product::class, 'baskets', 'user_id', 'product_id')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 
     public function baskets(): HasMany

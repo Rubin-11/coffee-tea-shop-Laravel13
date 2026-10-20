@@ -1,6 +1,6 @@
 # Пользователи, корзина, заказы
 
-Статус: схема и Eloquent-связи готовы, но бизнес-логика (сессия гостя → корзина, оформление
+Статус: схема и Eloquent-связи готовы, но бизнес-логика (корзина гостя в сессии и её перенос в БД при входе, оформление
 заказа, админка заказов) ещё не реализована — это этапы 5–7 проекта (см. `CLAUDE.md`).
 Этот файл — просто справка по уже существующей структуре БД.
 
@@ -11,35 +11,57 @@
 `$fillable`/`$hidden`-свойств). `UserAddress` — `hasMany` от `User`, хранит адреса доставки
 (страна/регион/город/улица/дом/квартира/телефон).
 
-## `baskets` — гостевая и пользовательская корзина в одной таблице
+## `baskets` — корзина авторизованного пользователя (изменено 2026-10-19)
 
-```php
-Sche[features](../features)ma::create('baskets', function (Blueprint $table) {
-    $table->string('session_id')->nullable();
-    $table->integer('quantity');
-    $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
-    $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-    $table->unique(['user_id', 'session_id', 'product_id'])->nullsNotDistinct();
-});
-```
+| Колонка | Тип | Примечание |
+|---|---|---|
+| `user_id` | FK → `users.id`, NOT NULL, `cascadeOnDelete` | удалили пользователя — удалилась его корзина |
+| `product_id` | FK → `products.id`, `cascadeOnDelete` | срабатывает только при физическом удалении товара, см. ниже |
+| `quantity` | integer, default 1, `CHECK (quantity > 0)` | |
 
-Одна таблица обслуживает оба случая из финальной цели проекта («корзина для гостей —
-сессия, для авторизованных — БД»):
-- гость: `user_id = null`, `session_id = <id сессии>`
-- авторизован: `user_id = <id>`, `session_id = null` (либо тоже заполнен — на момент
-  написания это не зафиксировано логикой, так как сама логика добавления в корзину ещё не
-  написана)
+Индекс `unique(['user_id', 'product_id'])`: у пользователя одна строка на товар, повторное
+добавление в корзину увеличивает `quantity` существующей строки, а не вставляет новую.
 
-`nullsNotDistinct()` на уникальном индексе — важный нюанс: по умолчанию в Postgres `NULL`
-не равен другому `NULL`, и `unique(a, b, c)` пропустил бы несколько строк с одинаковыми
-`product_id`/`session_id`, если `user_id` везде `NULL` (гости). `nullsNotDistinct()`
-заставляет Postgres считать `NULL = NULL` для этого индекса — так одна и та же
-гостевая сессия не может добавить один и тот же товар в корзину второй отдельной строкой
-(вместо этого при повторном добавлении пришлось бы обновлять `quantity` в существующей
-строке, не вставлять новую).
+### Почему в таблице больше нет `session_id`
 
-Связи: `Basket::user()` / `Basket::product()`; `User::products()` и `Product::users()` —
-обе `BelongsToMany` через `baskets` с `withPivot('session_id', 'quantity')`.
+Раньше одна таблица обслуживала и гостей (`user_id = NULL`, `session_id = <id сессии>`), и
+пользователей, с `unique(user_id, session_id, product_id)->nullsNotDistinct()`. Проблемы
+этой схемы:
+- цель проекта: «корзина для гостей — сессия, для авторизованных — БД». Гостевая корзина
+  в БД дублировала то, что должна делать сессия;
+- при входе Laravel [перегенерирует ID сессии](https://laravel.com/docs/13.x/session#regenerating-the-session-id)
+  (`$request->session()->regenerate()`, защита от session fixation). Строки с прежним
+  `session_id` после логина становились «сиротами», и их пришлось бы чистить отдельно;
+- ничто не мешало строке, где и `user_id`, и `session_id` равны `NULL`.
+
+Теперь так:
+- **гость (этап 5)**: корзина хранится в самой сессии (`session()->put('cart', [...])`).
+  `regenerate()` меняет только ID сессии, данные в ней сохраняются, поэтому корзина гостя
+  переживает вход;
+- **после входа (этап 6)**: содержимое корзины из сессии переносится в `baskets` для
+  `user_id` (если товар уже есть, `quantity` складываются), потом сессионная корзина
+  очищается;
+- `user_id NOT NULL`: строка корзины без владельца невозможна на уровне БД, поэтому
+  `nullsNotDistinct()` больше не нужен.
+
+### Почему количество проверяется через `CHECK`
+
+В Postgres нет беззнаковых целых. `unsignedInteger()` в Laravel на Postgres молча
+создаёт обычный `integer`, и отрицательное значение пройдёт. Поэтому в миграции после
+`Schema::create` выполняется `DB::statement('ALTER TABLE ... CHECK (quantity > 0)')`:
+Postgres сам отклонит `0` и отрицательные значения, даже если ошибка будет в коде.
+
+### Мягко удалённые товары
+
+`cascadeOnDelete` на `product_id` срабатывает только при `forceDelete()`. При мягком
+удалении строка в `products` остаётся, поэтому строки корзин удаляет обработчик
+`deleted` в `Product::booted()` (см.
+[products-and-properties.md](products-and-properties.md#удаление-товара--мягкое-изменено-2026-10-19)).
+
+Связи: `Basket::user()` / `Basket::product()`; `User::baskets()` (HasMany);
+`User::products()` и `Product::users()` — `BelongsToMany` через `baskets` с
+`withPivot('quantity')` и `withTimestamps()`. В модели `Basket` задан
+`#[Fillable(['user_id', 'product_id', 'quantity'])]`.
 
 ## `orders` / `orders_products`
 
