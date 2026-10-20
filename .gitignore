@@ -18,7 +18,6 @@ public_html/hot
 storage/*.key
 .idea
 .gigacode
-CLAUDE.md
 .gigaide
 .env
 .claude-docs
