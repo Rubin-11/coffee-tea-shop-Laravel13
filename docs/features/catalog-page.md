@@ -23,21 +23,50 @@ View: `resources/views/components/pages/catalog.blade.php`
 пагинации — без этого переход на страницу 2 сбрасывал бы выбранные фильтры. Подробнее про
 `$paginator`/`$elements` — в [pagination.md](pagination.md).
 
+### Проверка параметров фильтров (`CatalogFilterRequest`)
+
+Параметры фильтров приходят из URL и могут быть любыми (`?price_min=abc`, `?subcategory=1`,
+`?roast_level[][]=3`), поэтому в запрос к БД они попадают только после проверки.
+`CatalogController::index` принимает не `Request`, а
+[Form Request](https://laravel.com/docs/13.x/validation#form-request-validation)
+`App\Http\Requests\CatalogFilterRequest`; контроллер берёт данные из `$request->validated()`.
+
+Правила (`rules()`):
+- `price_min`, `price_max` — `nullable|numeric|min:0|max:99999999.99` (граница — колонка
+  `decimal(10, 2)`); `price_max` дополнительно `gte:price_min`, но только когда `price_min`
+  передан и числовой (`Rule::when`): `gte` без второго поля падает сам, и любой запрос с одним
+  `price_max` считался бы ошибочным;
+- `subcategory` — массив, элементы `integer|min:1`;
+- каждая характеристика из `PROPERTY_FILTERS` — массив, элементы `string|max:100`
+  (`string` отсекает вложенные массивы).
+
+**Что происходит при ошибке** (`failedValidation()`): стандартный ответ FormRequest —
+«назад с ошибками» (на странице, открытой по ссылке, это уводит неизвестно куда). Каталог
+публичный, поэтому запрос редиректится на ту же категорию (`route('catalog', slug)`) **только
+с корректными параметрами** — `$validator->valid()`: остальные фильтры продолжают работать.
+Если неверен хотя бы один элемент массива, сбрасывается весь этот параметр. Причины
+сброса лежат в `$errors` и показываются списком над формой фильтров в `catalog.blade.php`.
+Неизвестный `slug` по-прежнему даёт 404 (проверка запроса идёт до контроллера, редирект
+ведёт на тот же неизвестный slug).
+
+Тесты: `tests/Feature/Catalog/CatalogInvalidInputTest.php` (не 500) и
+`CatalogValidationTest.php` (что именно ответит каталог).
+
 ### Как читаются фильтры
 
-Цена и подкатегории — отдельные `->when($request->filled('param'), fn ($query) => ...)`:
-`when()` добавляет условие в запрос только если параметр реально пришёл и не пустой
-(`filled()`, а не `has()` — пустая строка `price_min=` не должна превращаться в
-`where('price', '>=', '')`).
+Цена и подкатегории — отдельные `->when(filled($filters['param'] ?? null), fn ($query) => ...)`
+(`$filters = $request->validated()`): `when()` добавляет условие в запрос только если
+параметр реально пришёл и не пустой (`filled()` — пустая строка `price_min=` не должна
+превращаться в `where('price', '>=', '')`).
 
 - `price_min`/`price_max` — обычный `where('price', '>=' / '<=', ...)`.
 - Характеристики (`processing`, `roast_level`, `acidity`, `coffee_type`, `body`, `bitterness`) —
-  один цикл по `CatalogController::PROPERTY_FILTERS` (параметр → slug группы). Для каждого
+  один цикл по `CatalogFilterRequest::PROPERTY_FILTERS` (параметр → slug группы). Для каждого
   заполненного параметра: `whereHas('properties', fn ($p) => $p->whereIn('properties.value', ...)->whereHas('group', fn ($g) => $g->where('slug', <slug группы>)))`.
-  Числовые шкалы теперь тоже строки в `value` (колонки `value_int` больше нет), поэтому
-  выбранные значения приводятся через `strval`.
+  Числовые шкалы теперь тоже строки в `value` (колонки `value_int` больше нет), а правило
+  валидации `string` гарантирует, что в `whereIn` придут именно строки.
 - `subcategory` — id'шники подкатегорий (чекбоксы в сайдбаре для некофейных категорий, см.
-  ниже), обычный `whereIn('category_id', array_map('intval', $request->subcategory))`. Это
+  ниже), обычный `whereIn('category_id', array_map('intval', $filters['subcategory']))`. Это
   условие добавляется к уже наложенному в начале запроса `whereIn('category_id', [все дети +
   сама категория])`, то есть сужает его, а не заменяет — выбрать подкатегорию, которая не
   входит в текущую открытую категорию, через URL нельзя.
@@ -50,7 +79,7 @@ View: `resources/views/components/pages/catalog.blade.php`
 
 Имена query-параметров (`processing`, `roast_level`, ...) — это просто имена полей формы,
 они не обязаны совпадать со slug группы в БД: привязка параметр → slug группы лежит в
-константе `PROPERTY_FILTERS` контроллера, в одном месте.
+константе `PROPERTY_FILTERS` в `CatalogFilterRequest`, в одном месте.
 
 ## View: структура `catalog.blade.php`
 
