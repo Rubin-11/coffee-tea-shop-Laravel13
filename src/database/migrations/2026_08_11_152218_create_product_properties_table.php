@@ -22,6 +22,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['product_id', 'property_id']);
+            // Фильтр каталога ищет товары по property_id; unique выше начинается с product_id и для этого не подходит
+            $table->index('property_id');
 
             // Значение должно принадлежать именно той группе, что указана в group_id
             $table->foreign(['property_id', 'group_id'])
