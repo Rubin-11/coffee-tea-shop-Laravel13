@@ -25,16 +25,17 @@ View: `resources/views/components/pages/catalog.blade.php`
 
 ### Как читаются фильтры
 
-Каждый фильтр — отдельный `->when($request->filled('param'), fn ($query) => ...)`:
+Цена и подкатегории — отдельные `->when($request->filled('param'), fn ($query) => ...)`:
 `when()` добавляет условие в запрос только если параметр реально пришёл и не пустой
 (`filled()`, а не `has()` — пустая строка `price_min=` не должна превращаться в
 `where('price', '>=', '')`).
 
 - `price_min`/`price_max` — обычный `where('price', '>=' / '<=', ...)`.
-- `processing`, `acidity`, `coffee_type` — категориальные свойства, ищутся через
-  `whereHas('properties', fn ($p) => $p->where('name', '<имя группы в БД>')->whereIn('value', $request->...))`.
-- `roast_level`, `body`, `bitterness` — числовые шкалы, та же схема, но по `value_int` и
-  `whereIn('value_int', ...)`.
+- Характеристики (`processing`, `roast_level`, `acidity`, `coffee_type`, `body`, `bitterness`) —
+  один цикл по `CatalogController::PROPERTY_FILTERS` (параметр → slug группы). Для каждого
+  заполненного параметра: `whereHas('properties', fn ($p) => $p->whereIn('properties.value', ...)->whereHas('group', fn ($g) => $g->where('slug', <slug группы>)))`.
+  Числовые шкалы теперь тоже строки в `value` (колонки `value_int` больше нет), поэтому
+  выбранные значения приводятся через `strval`.
 - `subcategory` — id'шники подкатегорий (чекбоксы в сайдбаре для некофейных категорий, см.
   ниже), обычный `whereIn('category_id', array_map('intval', $request->subcategory))`. Это
   условие добавляется к уже наложенному в начале запроса `whereIn('category_id', [все дети +
@@ -42,14 +43,14 @@ View: `resources/views/components/pages/catalog.blade.php`
   входит в текущую открытую категорию, через URL нельзя.
 
 `whereHas('properties', ...)` — товар попадает в выдачу, если среди *его* строк в пивоте
-`product_properties` есть хотя бы одна, подходящая под условие внутри closure (имя группы +
-значение из списка выбранных в чекбоксах). Про сам `properties()`/`product_properties` — см.
+`product_properties` есть хотя бы одна, подходящая под условие внутри closure (группа +
+значение из списка выбранных в чекбоксах, и группа с нужным slug). Внутри группы выбранные
+значения объединяются через ИЛИ, между группами — через И. Про сам `properties()`/`product_properties` — см.
 [../database/products-and-properties.md](../database/products-and-properties.md).
 
 Имена query-параметров (`processing`, `roast_level`, ...) — это просто имена полей формы,
-они не обязаны совпадать со значением колонки `properties.name` в БД: сама привязка
-query-параметр → группа БД делается внутри closure (`->where('name', 'Способ обжарки')` и
-т.д.), один раз в контроллере.
+они не обязаны совпадать со slug группы в БД: привязка параметр → slug группы лежит в
+константе `PROPERTY_FILTERS` контроллера, в одном месте.
 
 ## View: структура `catalog.blade.php`
 
