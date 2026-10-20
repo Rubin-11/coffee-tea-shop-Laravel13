@@ -16,6 +16,7 @@
 ### [database/](database/README.md) — схема БД и связи
 - [Категории](database/categories.md) — дерево категорий, self-join
 - [Товары и характеристики](database/products-and-properties.md) — Product, Property, пивот `product_properties`
+- [Отзывы](database/reviews.md) — таблица `reviews`, счётчик `reviews_count`
 - [Пользователи, корзина, заказы](database/users-baskets-orders.md) — User, Basket, Order (частично не реализовано)
 
 ### features/ — как работают конкретные участки приложения

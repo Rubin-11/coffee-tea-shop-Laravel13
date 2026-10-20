@@ -9,6 +9,7 @@
 | `property_groups` / `properties` / `product_properties` | Группы характеристик (обжарка, кислинка), их значения и привязка значений к товарам | [products-and-properties.md](products-and-properties.md) |
 | `product_images` | Изображения товара (схема есть, в коде пока не используется) | [products-and-properties.md](products-and-properties.md) |
 | `users` / `user_addresses` | Пользователи и их адреса | [users-baskets-orders.md](users-baskets-orders.md) |
+| `reviews` | Отзывы авторизованных пользователей о товарах | [reviews.md](reviews.md) |
 | `baskets` | Корзина авторизованных пользователей (гостевая — в сессии) | [users-baskets-orders.md](users-baskets-orders.md) |
 | `orders` / `orders_products` | Заказы и состав заказа | [users-baskets-orders.md](users-baskets-orders.md) |
 
@@ -24,6 +25,7 @@ product_properties: products ↔ properties   (многие-ко-многим; g
 baskets.user_id → users.id (NOT NULL)          корзина только авторизованных; гость — в сессии
 baskets.product_id → products.id
 user_addresses.user_id → users.id
+reviews.user_id → users.id, reviews.product_id → products.id   (один отзыв на пару пользователь/товар)
 orders.user_id → users.id (nullable, nullOnDelete: заказ переживает удаление пользователя)
 orders_products: orders ↔ products           (многие-ко-многим, со снапшотом цены/количества)
 ```

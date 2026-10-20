@@ -65,6 +65,11 @@ class Product extends Model
             ->withTimestamps();
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     // Получить категорию
     public function category(): BelongsTo
     {

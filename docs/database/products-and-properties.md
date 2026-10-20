@@ -11,7 +11,7 @@
 | `name`, `slug` (unique), `description` | string | |
 | `price` | decimal(10,2) | |
 | `quantity` | integer | складской остаток |
-| `reviews_count` | integer, default 0 | счётчик отзывов — сам отзыв как сущность пока не реализован |
+| `reviews_count` | integer, default 0 | счётчик отзывов; обновляется событиями модели `Review`, см. [reviews.md](reviews.md) |
 | `deleted_at` | timestamp, nullable (`softDeletes()`) | мягкое удаление, см. ниже |
 
 ### Удаление товара — мягкое (изменено 2026-10-19)
@@ -47,7 +47,7 @@
 восстановлен или не удалён полностью.
 
 Связи `Product`: `category()` (BelongsTo), `productsImages()` (HasMany → `ProductImage`),
-`properties()` (BelongsToMany → `Property` через `product_properties`), `syncProperties()` (запись характеристик, см. ниже), `users()` (BelongsToMany
+`reviews()` (HasMany → `Review`), `properties()` (BelongsToMany → `Property` через `product_properties`), `syncProperties()` (запись характеристик, см. ниже), `users()` (BelongsToMany
 → `User` через `baskets` — это и есть связь "товар в корзине у пользователя", см.
 [users-baskets-orders.md](users-baskets-orders.md)), `orders()` (BelongsToMany → `Order` через
 `orders_products`).
