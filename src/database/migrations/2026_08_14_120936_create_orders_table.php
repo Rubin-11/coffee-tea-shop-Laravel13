@@ -17,7 +17,9 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('order_number')->unique();
             $table->decimal('price', 10, 2);
-            $table->enum('payment_method', ['cash', 'card']);
+            // Допустимые значения — enum App\Enums\PaymentMethod (cast в модели), а не enum Postgres: добавить
+            // способ оплаты не потребует миграции с пересозданием CHECK
+            $table->string('payment_method', 20);
 
             // Контакты покупателя — копия на момент заказа, не зависит от users
             $table->string('customer_name');
@@ -32,7 +34,8 @@ return new class extends Migration
             $table->string('house_number');
             $table->string('flat_number')->nullable(); // в частном доме квартиры нет
 
-            $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');
+            // Допустимые значения — App\Enums\OrderStatus (cast в модели)
+            $table->string('status', 20)->default('pending');
             $table->index('user_id');
             $table->timestamps();
         });

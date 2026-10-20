@@ -8,10 +8,11 @@
 | Колонка | Тип | Примечание |
 |---|---|---|
 | `category_id` | FK → `categories.id`, `restrictOnDelete` | категорию с товарами удалить нельзя |
-| `name`, `slug` (unique), `description` | string | |
+| `name`, `slug` (unique) | string | |
+| `description` | text | описание длиннее 255 символов не обрезается |
 | `price` | decimal(10,2) | |
-| `quantity` | integer | складской остаток |
-| `reviews_count` | integer, default 0 | счётчик отзывов; обновляется событиями модели `Review`, см. [reviews.md](reviews.md) |
+| `quantity` | integer, `CHECK (quantity >= 0)` | складской остаток, в минус уйти не может |
+| `reviews_count` | integer, default 0, `CHECK (reviews_count >= 0)` | счётчик отзывов; обновляется событиями модели `Review`, см. [reviews.md](reviews.md) |
 | `deleted_at` | timestamp, nullable (`softDeletes()`) | мягкое удаление, см. ниже |
 
 ### Удаление товара — мягкое (изменено 2026-10-19)
@@ -131,7 +132,7 @@ coffee-type`, `body`, `bitterness`. Один цикл вместо шести к
 
 ## `product_images`
 
-Схема есть (`product_id`, `image_path`, `alt_text`), связь `ProductImage::product()` и
+Схема есть (`product_id`, `image_path` NOT NULL, `alt_text` nullable): строка с картинкой без пути не имеет смысла, связь `ProductImage::product()` и
 `Product::productsImages()` объявлены — но нигде в коде (сидеры, контроллеры, Blade) эта
 таблица пока не используется. Карточки товаров сейчас показывают статичную SVG-иконку
 вместо реального изображения.

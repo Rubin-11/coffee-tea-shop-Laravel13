@@ -9,7 +9,8 @@
 `users` расширен под магазин кастомными полями: `first_name`, `last_name`, `is_admin`,
 `is_active` (через `#[Fillable]`/`#[Hidden]` атрибуты модели вместо классических
 `$fillable`/`$hidden`-свойств). `UserAddress` — `hasMany` от `User`, хранит адреса доставки
-(страна/регион/город/улица/дом/квартира/телефон).
+(страна/регион/город/улица/дом/квартира/телефон). `flat_number` nullable (в частном доме
+квартиры нет), как и в `orders`.
 
 ## `baskets` — корзина авторизованного пользователя (изменено 2026-10-19)
 
@@ -70,11 +71,11 @@ Postgres сам отклонит `0` и отрицательные значен�
 | `user_id` | nullable FK → `users.id`, `nullOnDelete` | `NULL` у гостевого заказа и у заказа удалённого пользователя |
 | `order_number` | string, unique | |
 | `price` | decimal(10,2) | итоговая сумма заказа |
-| `payment_method` | enum `cash`/`card` | |
+| `payment_method` | string(20), cast в `App\Enums\PaymentMethod` (`cash`/`card`) | |
 | `customer_name`, `customer_email`, `customer_phone` | string (телефон до 20 символов) | контакты покупателя на момент заказа |
 | `country`, `region`, `city`, `street`, `house_number` | string | адрес доставки на момент заказа |
 | `flat_number` | string, nullable | в частном доме квартиры нет |
-| `status` | enum `pending`/`processing`/`completed`/`cancelled`, default `pending` | |
+| `status` | string(20), default `pending`, cast в `App\Enums\OrderStatus` (`pending`/`processing`/`completed`/`cancelled`) | |
 
 ### Почему заказ хранит копию контактов и адреса (изменено 2026-10-19)
 
@@ -94,6 +95,17 @@ Postgres сам отклонит `0` и отрицательные значен�
   бы не подошла.
 - адрес хранится по полям (как в `user_addresses`), а не одной строкой, чтобы его было
   легко скопировать из сохранённого адреса и фильтровать заказы, например, по городу.
+
+### Почему `payment_method` и `status` — строки с PHP enum (изменено 2026-10-20)
+
+Laravel `enum()` на Postgres создаёт `varchar` с `CHECK (... IN (...))`. Добавить новое
+значение (например, способ оплаты) значит пересоздать этот CHECK отдельной миграцией. Теперь
+в БД обычные `string(20)`, а допустимые значения задают PHP enum'ы в `app/Enums/`
+(`PaymentMethod`, `OrderStatus`), подключённые через `casts()` модели `Order`:
+`$order->status` возвращает `OrderStatus::Pending`, а не строку, и присвоить недопустимое
+значение через модель нельзя (`"bitcoin" is not a valid backing value`). Минус: на уровне
+самой БД проверки значений больше нет, сырой SQL или `DB::table()` может записать любую
+строку. Если это станет проблемой, CHECK можно вернуть через `DB::statement()`.
 
 В модели `Order` задан `#[Fillable]` со всеми этими полями, кроме `status`: при создании
 заказ получает `pending` по умолчанию, а статус меняет только админка.

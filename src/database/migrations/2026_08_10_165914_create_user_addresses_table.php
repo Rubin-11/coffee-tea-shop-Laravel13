@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('city');
             $table->string('street');
             $table->string('house_number');
-            $table->string('flat_number');
+            $table->string('flat_number')->nullable(); // в частном доме квартиры нет
             $table->string('phone_number');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->index('user_id');
