@@ -1,7 +1,7 @@
 # Товары и характеристики
 
-Модели: `app/Models/Product.php`, `app/Models/Property.php`, `app/Models/ProductImage.php`
-Миграции: `create_products_table`, `create_properties_table`, `create_product_properties_table`, `create_product_images_table`
+Модели: `app/Models/Product.php`, `app/Models/PropertyGroup.php`, `app/Models/Property.php`, `app/Models/ProductImage.php`
+Миграции: `create_products_table`, `create_property_groups_table`, `create_properties_table`, `create_product_properties_table`, `create_product_images_table`
 
 ## `products`
 
@@ -47,39 +47,87 @@
 восстановлен или не удалён полностью.
 
 Связи `Product`: `category()` (BelongsTo), `productsImages()` (HasMany → `ProductImage`),
-`properties()` (BelongsToMany → `Property` через `product_properties`), `users()` (BelongsToMany
+`properties()` (BelongsToMany → `Property` через `product_properties`), `syncProperties()` (запись характеристик, см. ниже), `users()` (BelongsToMany
 → `User` через `baskets` — это и есть связь "товар в корзине у пользователя", см.
 [users-baskets-orders.md](users-baskets-orders.md)), `orders()` (BelongsToMany → `Order` через
 `orders_products`).
 
-## `properties` — характеристики как универсальная таблица "имя группы → значение"
+## Характеристики: три таблицы (изменено 2026-10-20)
 
-| Колонка | Тип |
-|---|---|
-| `name` | string — имя группы характеристики, например `"Способ обжарки"` |
-| `value` | string, nullable — для категориальных значений ("Сухая", "Арабика") |
-| `value_int` | integer, nullable — для числовых шкал (1..5, 1..10) |
+Раньше всё лежало в одной `properties` (`name` + `value` + `value_int`): группа была просто
+повторяющимся текстом, БД не знала, что «Светлая» и «Тёмная» — варианты одной обжарки, а
+фильтры в `CatalogController` искали группы по русским строкам. Теперь три таблицы:
 
-Это не одна строка на характеристику товара, а справочник возможных значений: каждая пара
-"группа + конкретное значение" — отдельная строка. Например, группа `"Кислинка"` — это три
-строки (Низкая/Средняя/Высокая), группа `"Насыщенность"` — десять строк (`value_int` 1..10).
-Какие именно значения привязаны к конкретному товару — решает pivot-таблица
-`product_properties`, не эта таблица.
+```
+property_groups                 properties                         product_properties
+(Обжарка, Кислинка…)            (значения групп)                   (что у какого товара)
+───────────────────             ─────────────────────              ────────────────────────────
+id                              id                                 product_id → products
+name  unique                    group_id → property_groups         property_id ┐ составной FK
+slug  unique                    value   '«Сухая»' / '7'            group_id    ┘ → properties(id, group_id)
+is_multiple                     sort                               is_multiple ── составной FK
+sort                            unique(group_id, value)                          (group_id, is_multiple)
+unique(id, is_multiple)         unique(id, group_id)                             → property_groups
+```
 
-Группы, которые реально существуют в данных (см. `PropertySeeder`):
-`Способ обжарки`, `Кислинка`, `Особые`, `Вид кофе`, `Рейтинг`, `Степень обжарки`,
-`Кислинка число`, `Горчинка`, `Насыщенность`.
+### `property_groups`
+Одна строка — одна характеристика («Степень обжарки»). `slug` — ключ для кода и фильтров
+(`roast-level`, `body`…), от русского названия ничего не зависит. `is_multiple`: `false` —
+у товара ровно одно значение группы (обжарка, кислинка), `true` — несколько (теги группы
+«Особые»: «Популярное», «Скидки»). `sort` — порядок вывода групп.
 
+### `properties`
+Одна строка — одно значение группы. Тексты («Сухая») и числа шкалы («7») хранятся в одной
+колонке `value` (string), вместо прежней пары `value` / `value_int`; порядок вывода — `sort`.
+`unique(group_id, value)` не даёт завести дубль значения в группе. Второй индекс
+`unique(id, group_id)` технически избыточен (`id` и так уникален), но нужен как цель
+составного внешнего ключа из `product_properties`.
 
-## `product_properties` — пивот `products` ↔ `properties`
+### `product_properties` — пивот, который знает про группу
+Кроме `product_id` / `property_id` хранит копии `group_id` и `is_multiple`. Зачем: обычный
+`unique(product_id, property_id)` пропустил бы товару и «Светлую», и «Тёмную» обжарку сразу
+(пары разные). Поэтому:
 
-`unique(['product_id', 'property_id'])` — у одной пары товар/характеристика не может быть
-дублей. Сама таблица не ограничивает, сколько строк одной группы (`name`) может быть у
-одного товара — это только соглашение в коде сидера
-(см. [features/seeders.md](../features/seeders.md)): для категориальных и числовых групп —
-по одному значению на товар, а для группы `"Особые"` — от 0 до нескольких тегов сразу.
+1. **Составной FK `(property_id, group_id) → properties(id, group_id)`** — `group_id` в пивоте
+   обязан совпадать с группой самого значения, подделать нельзя.
+2. **Составной FK `(group_id, is_multiple) → property_groups(id, is_multiple)`** — флаг
+   в пивоте обязан совпадать с флагом группы. Смена `is_multiple` в группе каскадно
+   (`ON UPDATE CASCADE`) обновит пивот; если после этого у какого-то товара окажется
+   несколько значений одиночной группы, Postgres отклонит смену флага.
+3. **Частичный уникальный индекс** `product_properties_single_value` на
+   `(product_id, group_id) WHERE NOT is_multiple` — не больше одного значения на товар для
+   одиночных групп. Для `is_multiple = true` ограничения нет. Частичные индексы Blueprint не
+   умеет, поэтому индекс создаётся через `DB::statement()` в миграции.
+4. `unique(product_id, property_id)` остаётся — не дублировать одно и то же значение.
 
-Связь в модели: `Product::properties()` / `Property::products()`, обе `BelongsToMany`.
+### Как записывать характеристики товара
+`$product->properties()->sync([...])` напрямую **не годится**: он не заполнит `group_id` и
+`is_multiple`, и вставка упадёт на NOT NULL. Для этого есть `Product::syncProperties(array
+$propertyIds)` — берёт значения вместе с группами (`Property::with('group')`), собирает
+`[property_id => ['group_id' => …, 'is_multiple' => …]]` и вызывает `sync()`. Так же будет
+сохранять характеристики админка.
+
+### Фильтры каталога
+`CatalogController::PROPERTY_FILTERS` связывает параметр query string со slug группы:
+`processing → processing-method`, `roast_level → roast-level`, `acidity`, `coffee_type →
+coffee-type`, `body`, `bitterness`. Один цикл вместо шести копий `where('name', 'Русская
+строка')`: товар подходит, если у него есть значение с `value IN (выбранные)` в группе с
+этим slug. Внутри группы значения объединяются через ИЛИ, между группами — через И. Значения
+в query остались прежними («Сухая», «3»), потому что Blade-фильтры не менялись; числа
+приводятся к строке (`strval`), так как `value` — string. Значения уникальны внутри группы,
+поэтому однозначности это не мешает.
+
+Связи моделей: `PropertyGroup::properties()` (HasMany, по `sort`), `Property::group()`
+(BelongsTo), `Property::products()` и `Product::properties()` (BelongsToMany с
+`withPivot('group_id', 'is_multiple')` и `withTimestamps()`).
+
+Группы в данных (см. `PropertySeeder`), slug → название: `processing-method` Способ обжарки,
+`acidity` Кислинка, `specials` Особые (`is_multiple`), `coffee-type` Вид кофе, `rating`
+Рейтинг, `roast-level` Степень обжарки, `acidity-level` Кислинка число, `bitterness`
+Горчинка, `body` Насыщенность. Названия «Кислинка» (Низкая/Средняя/Высокая) и «Кислинка
+число» (1–10) пока дублируют друг друга по смыслу — оставлены как есть, к ним можно
+вернуться при доработке фильтров. «Рейтинг» тоже временная характеристика: в перспективе он
+должен считаться из отзывов.
 
 ## `product_images`
 

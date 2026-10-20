@@ -12,7 +12,7 @@ CategorySeeder → UserSeeder → ProductSeeder → PropertySeeder → ProductPr
 | `CategorySeeder` | 4 категории верхнего уровня + их подкатегории. Подробнее: [../database/categories.md](../database/categories.md) |
 | `UserSeeder` | Тестовые пользователи |
 | `ProductSeeder` | ~90 товаров (кофе/чай/вендинг/здоровое питание), привязанные к категориям по `slug` |
-| `PropertySeeder` | Справочник характеристик (`properties`) — группы и их значения. Подробнее: [../database/products-and-properties.md](../database/products-and-properties.md) |
+| `PropertySeeder` | Справочник характеристик: группы (`property_groups`) и их значения (`properties`). Подробнее: [../database/products-and-properties.md](../database/products-and-properties.md) |
 | `ProductPropertySeeder` | Привязка характеристик к товарам кофе (пивот `product_properties`) — см. ниже |
 | `UserAddressSeeder` | Тестовые адреса пользователей |
 
@@ -27,17 +27,13 @@ CategorySeeder → UserSeeder → ProductSeeder → PropertySeeder → ProductPr
   `svezheobzharennyy-kofe` и всех её детей — характеристики вроде "способ обжарки"
   осмысленны только для кофе, остальным категориям (чай, вендинг, здоровое питание) они не
   присваиваются.
-- **`Property::all()->groupBy('name')`** — один запрос вместо запроса на каждый товар;
-  дальше для каждой группы берётся `->random()->id`.
-- **Одно значение на "одиночную" группу, 0–3 на `"Особые"`.** Для способа обжарки,
-  кислинки, вида кофе и числовых шкал — ровно один случайный `id` на товар. Для `"Особые"`
-  (бейджи типа "Популярное"/"Скидки") — `rand(0, 3)` случайных тегов, может быть и 0.
-  Это соглашение только в коде сидера — на уровне БД ничего не мешает присвоить товару
-  сколько угодно значений одной группы (уникален только `product_id + property_id`, не
-  `product_id + property.name`).
-- **`sync()`, не `attach()`.** Повторный запуск `db:seed` не приведёт к дублям/ошибке
-  уникальности в pivot-таблице — `sync()` каждый раз переустанавливает набор связей товара с
-  нуля.
-
-Известная нестыковка именования между этим сидером и UI фильтров на странице каталога —
-см. [../database/products-and-properties.md](../database/products-and-properties.md).
+- **`PropertyGroup::with('properties')->get()->keyBy('slug')`** — группы вместе со значениями
+  двумя запросами вместо запроса на каждый товар; дальше `$groups['roast-level']->properties->random()->id`.
+- **Одно значение на одиночную группу, 0–3 на `specials`.** Восемь одиночных групп — ровно один
+  случайный `id` на товар. Для `specials` (бейджи «Популярное»/«Скидки», `is_multiple = true`) —
+  `rand(0, 3)` случайных тегов, может быть и 0. Теперь это не только соглашение сидера: для
+  одиночных групп вторую строку отклонит частичный уникальный индекс в БД (см.
+  [../database/products-and-properties.md](../database/products-and-properties.md)).
+- **`syncProperties()`, не `attach()`.** Метод модели вызывает `sync()` и заполняет `group_id` /
+  `is_multiple` в пивоте. Повторный запуск `db:seed` не приведёт к дублям — набор связей
+  товара каждый раз переустанавливается с нуля.

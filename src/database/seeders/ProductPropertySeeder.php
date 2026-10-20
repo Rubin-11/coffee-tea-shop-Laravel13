@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\Property;
+use App\Models\PropertyGroup;
 use Illuminate\Database\Seeder;
 
 class ProductPropertySeeder extends Seeder
@@ -13,27 +13,25 @@ class ProductPropertySeeder extends Seeder
     {
         $this->command->info('☕ Привязка характеристик к товарам...');
 
-        // group by name -> один запрос вместо N+1 на каждый товар
-        $properties = Property::all()->groupBy('name');
+        // Группы со значениями — один запрос на группы и один на значения вместо N+1 на каждый товар
+        $groups = PropertyGroup::with('properties')->get()->keyBy('slug');
         $products = Product::whereIn('category_id', $this->coffeeCategoryIds())->get();
 
-        foreach ($products as $product) {
-            $propertyIds = [
-                // по одному случайному значению на "одиночные" группы
-                $properties['Способ обжарки']->random()->id,
-                $properties['Кислинка']->random()->id,
-                $properties['Вид кофе']->random()->id,
-                $properties['Степень обжарки']->random()->id,
-                $properties['Кислинка число']->random()->id,
-                $properties['Горчинка']->random()->id,
-                $properties['Насыщенность']->random()->id,
-                $properties['Рейтинг']->random()->id,
-                // 0-3 тега; random(0) не падает — просто пустая коллекция
-                ...$properties['Особые']->random(rand(0, 3))->pluck('id')->all(),
-            ];
+        // Одиночные группы (is_multiple = false) — по одному случайному значению на товар
+        $singleSlugs = ['processing-method', 'acidity', 'coffee-type', 'roast-level',
+            'acidity-level', 'bitterness', 'body', 'rating'];
 
-            // sync(), не attach() — сидер можно перезапускать без дублей в pivot
-            $product->properties()->sync($propertyIds);
+        foreach ($products as $product) {
+            $propertyIds = [];
+            foreach ($singleSlugs as $slug) {
+                $propertyIds[] = $groups[$slug]->properties->random()->id;
+            }
+
+            // 0-3 тега из группы с несколькими значениями; random(0) не падает — просто пустая коллекция
+            array_push($propertyIds, ...$groups['specials']->properties->random(rand(0, 3))->pluck('id')->all());
+
+            // syncProperties() — sync() под капотом, сидер можно перезапускать без дублей в pivot
+            $product->syncProperties($propertyIds);
         }
 
         $this->command->info('✅ Характеристики привязаны к товарам!');

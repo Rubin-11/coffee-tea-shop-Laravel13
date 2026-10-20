@@ -30,7 +30,25 @@ class Product extends Model
 
     public function properties(): BelongsToMany
     {
-        return $this->belongsToMany( Property::class, 'product_properties', 'product_id', 'property_id');
+        return $this->belongsToMany( Property::class, 'product_properties', 'product_id', 'property_id')
+            ->withPivot('group_id', 'is_multiple')
+            ->withTimestamps();
+    }
+
+    // Заменяет характеристики товара набором значений. group_id и is_multiple в pivot
+    // заполняем из самих значений — sync() без этого не пройдёт составные внешние ключи
+    public function syncProperties(array $propertyIds): void
+    {
+        $pivot = Property::with('group')->findMany($propertyIds)
+            ->mapWithKeys(fn (Property $property) => [
+                $property->id => [
+                    'group_id' => $property->group_id,
+                    'is_multiple' => $property->group->is_multiple,
+                ],
+            ])
+            ->all();
+
+        $this->properties()->sync($pivot);
     }
 
     public function users(): BelongsToMany

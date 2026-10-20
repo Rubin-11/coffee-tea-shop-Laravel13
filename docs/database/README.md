@@ -6,7 +6,7 @@
 |---|---|---|
 | `categories` | Дерево категорий каталога | [categories.md](categories.md) |
 | `products` | Товары | [products-and-properties.md](products-and-properties.md) |
-| `properties` / `product_properties` | Характеристики товаров (обжарка, кислинка и т.д.) и их привязка к товарам | [products-and-properties.md](products-and-properties.md) |
+| `property_groups` / `properties` / `product_properties` | Группы характеристик (обжарка, кислинка), их значения и привязка значений к товарам | [products-and-properties.md](products-and-properties.md) |
 | `product_images` | Изображения товара (схема есть, в коде пока не используется) | [products-and-properties.md](products-and-properties.md) |
 | `users` / `user_addresses` | Пользователи и их адреса | [users-baskets-orders.md](users-baskets-orders.md) |
 | `baskets` | Корзина авторизованных пользователей (гостевая — в сессии) | [users-baskets-orders.md](users-baskets-orders.md) |
@@ -18,7 +18,9 @@
 categories.parent_id → categories.id        (self-join, дерево категорий)
 products.category_id → categories.id       (restrictOnDelete; products мягко удаляются через deleted_at)
 product_images.product_id → products.id
-product_properties: products ↔ properties   (многие-ко-многим)
+properties.group_id → property_groups.id
+product_properties: products ↔ properties   (многие-ко-многим; group_id и is_multiple копируются в пивот,
+                                             одиночная группа — одно значение на товар, см. products-and-properties.md)
 baskets.user_id → users.id (NOT NULL)          корзина только авторизованных; гость — в сессии
 baskets.product_id → products.id
 user_addresses.user_id → users.id

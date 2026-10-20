@@ -12,10 +12,16 @@ return new class extends Migration {
     {
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('value')->nullable();
-            $table->integer('value_int')->nullable();
+            // Удалили группу — удалились её значения
+            $table->foreignId('group_id')->constrained('property_groups')->cascadeOnDelete();
+            // И текст («Сухая»), и число шкалы («7») — строкой; порядок вывода задаёт sort
+            $table->string('value');
+            $table->unsignedSmallInteger('sort')->default(0);
             $table->timestamps();
+
+            $table->unique(['group_id', 'value']);
+            // Нужен как цель составного внешнего ключа из product_properties (property_id, group_id)
+            $table->unique(['id', 'group_id']);
         });
     }
 

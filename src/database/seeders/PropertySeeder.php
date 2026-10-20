@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\PropertyGroup;
 use Illuminate\Database\Seeder;
-use App\Models\Property;
 
 class PropertySeeder extends Seeder
 {
@@ -20,98 +20,33 @@ class PropertySeeder extends Seeder
 
     public function createProperty(): void
     {
-        $property = [
-            'Способ обжарки' => [
-                ['value' => 'Сухая'],
-                ['value' => 'Мытая'],
-                ['value' => 'Прочие'],
-            ],
-            'Кислинка' => [
-                ['value' => 'Низкая'],
-                ['value' => 'Средняя'],
-                ['value' => 'Высокая'],
-            ],
-            'Особые' => [
-                ['value' => 'Популярное'],
-                ['value' => 'Новый урожай'],
-                ['value' => 'Ваш выбор'],
-                ['value' => 'Микролот'],
-                ['value' => 'Сорт недели'],
-                ['value' => 'Скидки'],
-                ['value' => 'Новинка'],
-            ],
-            'Вид кофе' => [
-                ['value' => 'Арабика'],
-                ['value' => 'Рабуста'],
-                ['value' => 'Смесь арабики'],
-                ['value' => 'Смесь арабика/рабуста'],
-            ],
-            'Рейтинг' => [
-                ['value_int' => 1],
-                ['value_int' => 2],
-                ['value_int' => 3],
-                ['value_int' => 4],
-                ['value_int' => 5],
-            ],
-            'Степень обжарки' => [
-                ['value_int' => 1],
-                ['value_int' => 2],
-                ['value_int' => 3],
-                ['value_int' => 4],
-                ['value_int' => 5],
-            ],
-            'Кислинка число' => [
-                ['value_int' => 1],
-                ['value_int' => 2],
-                ['value_int' => 3],
-                ['value_int' => 4],
-                ['value_int' => 5],
-                ['value_int' => 6],
-                ['value_int' => 7],
-                ['value_int' => 8],
-                ['value_int' => 9],
-                ['value_int' => 10],
-            ],
-            'Горчинка' => [
-                ['value_int' => 1],
-                ['value_int' => 2],
-                ['value_int' => 3],
-                ['value_int' => 4],
-                ['value_int' => 5],
-                ['value_int' => 6],
-                ['value_int' => 7],
-                ['value_int' => 8],
-                ['value_int' => 9],
-                ['value_int' => 10],
-            ],
-            'Насыщенность' => [
-                ['value_int' => 1],
-                ['value_int' => 2],
-                ['value_int' => 3],
-                ['value_int' => 4],
-                ['value_int' => 5],
-                ['value_int' => 6],
-                ['value_int' => 7],
-                ['value_int' => 8],
-                ['value_int' => 9],
-                ['value_int' => 10],
-            ],
+        // slug => [название группы, несколько значений у товара?, значения]
+        $groups = [
+            'processing-method' => ['Способ обжарки', false, ['Сухая', 'Мытая', 'Прочие']],
+            'acidity' => ['Кислинка', false, ['Низкая', 'Средняя', 'Высокая']],
+            'specials' => ['Особые', true, [
+                'Популярное', 'Новый урожай', 'Ваш выбор', 'Микролот', 'Сорт недели', 'Скидки', 'Новинка',
+            ]],
+            'coffee-type' => ['Вид кофе', false, ['Арабика', 'Рабуста', 'Смесь арабики', 'Смесь арабика/рабуста']],
+            'rating' => ['Рейтинг', false, range(1, 5)],
+            'roast-level' => ['Степень обжарки', false, range(1, 5)],
+            'acidity-level' => ['Кислинка число', false, range(1, 10)],
+            'bitterness' => ['Горчинка', false, range(1, 10)],
+            'body' => ['Насыщенность', false, range(1, 10)],
         ];
 
-        foreach ($property as $name => $values) {
-            foreach ($values as $value) {
-                if (isset($value['value'])) {
-                    $valueV = 'value';
-                } elseif (isset($value['value_int'])) {
-                    $valueV = 'value_int';
-                } else {
-                    $this->command->info('❌ Ошибка с ключом массива...');
-                    continue;
-                }
-                Property::create([
-                    'name' => $name,
-                    "$valueV" => $value["$valueV"],
-                ]);
+        $groupSort = 0;
+        foreach ($groups as $slug => [$name, $isMultiple, $values]) {
+            $group = PropertyGroup::create([
+                'name' => $name,
+                'slug' => $slug,
+                'is_multiple' => $isMultiple,
+                'sort' => ++$groupSort,
+            ]);
+
+            // Порядок значений в массиве = порядок вывода (sort)
+            foreach (array_values($values) as $i => $value) {
+                $group->properties()->create(['value' => (string) $value, 'sort' => $i + 1]);
             }
         }
     }
