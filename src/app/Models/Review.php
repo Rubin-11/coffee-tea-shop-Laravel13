@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['user_id', 'product_id', 'rating', 'body'])]
 class Review extends Model
 {
+    /** @use HasFactory<\Database\Factories\ReviewFactory> */
+    use HasFactory;
+
     protected static function booted(): void
     {
         // products.reviews_count — счётчик, держим его в согласии с таблицей отзывов.
