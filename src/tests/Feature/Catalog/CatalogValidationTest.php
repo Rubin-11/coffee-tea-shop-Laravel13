@@ -38,6 +38,12 @@ it('показывает причину сброса на странице ка�
         ->assertSee('Цена «от» должна быть числом.');
 });
 
+it('сбрасывает поисковый запрос, если это не строка, и оставляет остальные фильтры', function () {
+    $this->get(route('catalog', ['slug' => $this->category->slug, 'q' => ['кофе'], 'price_max' => 500]))
+        ->assertRedirect(route('catalog', ['slug' => $this->category->slug, 'price_max' => 500]))
+        ->assertSessionHasErrors('q');
+});
+
 it('не редиректит корректный запрос и не показывает ошибок', function () {
     $this->get(route('catalog', ['slug' => $this->category->slug, 'price_min' => 100, 'price_max' => 500, 'roast_level' => ['3']]))
         ->assertOk()

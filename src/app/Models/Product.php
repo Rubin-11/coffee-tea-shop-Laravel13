@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -75,5 +76,21 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    // Подстрока в названии без учёта регистра. lower() в Postgres зависит от локали
+    // и русские буквы не складывает, поэтому кириллицу переводим явно
+    public function scopeWhereNameContains(Builder $query, string $term): Builder
+    {
+        $needle = addcslashes(mb_strtolower(trim($term)), '%_\\');
+
+        return $query->whereRaw(
+            "translate(lower(name), ?, ?) LIKE ?",
+            [
+                'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ',
+                'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+                '%'.$needle.'%',
+            ]
+        );
     }
 }

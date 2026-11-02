@@ -38,6 +38,7 @@ class CatalogFilterRequest extends FormRequest
             ],
             'subcategory' => ['nullable', 'array'],
             'subcategory.*' => ['integer', 'min:1'],
+            'q' => ['nullable', 'string', 'max:255'],
         ];
 
         foreach (array_keys(self::PROPERTY_FILTERS) as $param) {
@@ -62,6 +63,8 @@ class CatalogFilterRequest extends FormRequest
             'subcategory.array' => 'Некорректный фильтр по подкатегориям.',
             'subcategory.*.integer' => 'Некорректный фильтр по подкатегориям.',
             'subcategory.*.min' => 'Некорректный фильтр по подкатегориям.',
+            'q.string' => 'Некорректный поисковый запрос.',
+            'q.max' => 'Поисковый запрос слишком длинный.',
         ];
 
         foreach (array_keys(self::PROPERTY_FILTERS) as $param) {

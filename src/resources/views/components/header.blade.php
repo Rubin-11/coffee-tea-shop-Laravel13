@@ -22,12 +22,12 @@
         {{-- Действия --}}
         <div class="flex items-center gap-1 sm:gap-2">
             {{-- Поиск (десктоп) --}}
-            <form action="/catalog" method="GET" class="mr-1 hidden md:block">
+            <form action="{{ route('search') }}" method="GET" class="mr-1 hidden md:block">
                 <label class="flex h-11 items-center gap-2 rounded-full border border-line bg-white px-4">
                     <svg class="h-4 w-4 shrink-0 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.35-4.35"></path>
                     </svg>
-                    <input type="search" name="q" placeholder="Поиск по товарам" class="w-44 bg-transparent text-sm text-ink outline-none placeholder:text-muted xl:w-56">
+                    <input type="search" name="q" value="{{ request('q') }}" placeholder="Поиск по товарам" class="w-44 bg-transparent text-sm text-ink outline-none placeholder:text-muted xl:w-56">
                 </label>
             </form>
 
@@ -67,8 +67,8 @@
             <a href="/blog" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Блог</a>
             <a href="/pages/contacts" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Контакты</a>
             <a href="/account" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Личный кабинет</a>
-            <form action="/catalog" method="GET" class="mt-2">
-                <input type="search" name="q" placeholder="Поиск по товарам" class="field">
+            <form action="{{ route('search') }}" method="GET" class="mt-2">
+                <input type="search" name="q" value="{{ request('q') }}" placeholder="Поиск по товарам" class="field">
             </form>
         </nav>
     </div>

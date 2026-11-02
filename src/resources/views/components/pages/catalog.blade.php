@@ -39,6 +39,13 @@
 
                     <form method="GET">
                     <div class="space-y-2">
+                        <div class="text-sm font-bold uppercase tracking-wide text-muted">Название</div>
+                        <input type="search" name="q" value="{{ request('q') }}" placeholder="Название товара" class="field py-2.5">
+                    </div>
+
+                    <hr class="my-5 border-line">
+
+                    <div class="space-y-2">
                         <div class="text-sm font-bold uppercase tracking-wide text-muted">Цена, ₽</div>
                         <div class="flex items-center gap-2">
                             <input type="number" name="price_min" value="{{ request('price_min') }}" placeholder="от" class="field py-2.5">

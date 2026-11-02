@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('/search', [CatalogController::class, 'search'])->name('search');
+
 Route::prefix('catalog')->group(function () {
     Route::get('/{slug}', [CatalogController::class, 'index'])->name('catalog');
 });
