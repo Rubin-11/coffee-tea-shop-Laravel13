@@ -17,13 +17,14 @@
 - [Категории](database/categories.md) — дерево категорий, self-join
 - [Товары и характеристики](database/products-and-properties.md) — Product, Property, пивот `product_properties`
 - [Отзывы](database/reviews.md) — таблица `reviews`, счётчик `reviews_count`
-- [Пользователи, корзина, заказы](database/users-baskets-orders.md) — User, Basket, Order (частично не реализовано)
+- [Пользователи, корзина, заказы](database/users-baskets-orders.md) — User, Basket, Order (корзина гостя — в сессии, см. [features/cart.md](features/cart.md))
 
 ### features/ — как работают конкретные участки приложения
 - [Страница каталога](features/catalog-page.md) — маршрут → контроллер → view, переключатель категорий, фильтры
 - [Пагинация](features/pagination.md) — кастомный view пагинации
 - [Автотесты](features/testing.md) — Pest, тестовая БД PostgreSQL, фабрики, что покрыто
 - [Сидеры](features/seeders.md) — тестовые данные, порядок запуска, привязка характеристик к товарам
+- [Корзина гостя](features/cart.md) — сессия `cart`, остаток, страница `/cart`
 
 ## Как это читать (для Сергея)
 Если непонятно, как работает какой-то участок — смотри сюда раньше, чем в сам код: здесь

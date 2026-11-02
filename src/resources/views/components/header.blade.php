@@ -41,13 +41,13 @@
             </a>
 
             {{-- Корзина со счётчиком --}}
-            <a href="/cart" aria-label="Корзина" title="Корзина"
+            <a href="{{ route('cart.index') }}" aria-label="Корзина" title="Корзина"
                class="relative grid h-11 w-11 place-items-center rounded-full text-ink transition-colors hover:bg-soft hover:text-accent">
                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                 </svg>
-                <span class="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-white">2</span>
+                <span class="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-white">{{ $cartCount }}</span>
             </a>
 
             {{-- Бургер (мобильное меню) --}}
