@@ -6,6 +6,7 @@ use App\Contracts\Cart;
 use App\Models\Basket;
 use App\Models\Product;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 // Корзина авторизованного пользователя. Одна строка baskets на пару user_id + product_id.
@@ -85,6 +86,60 @@ class DatabaseCart implements Cart
     public function total(): float
     {
         return (float) $this->items()->sum(fn ($item) => $item->lineTotal);
+    }
+
+    // Сессия cart переносится в baskets текущего пользователя и очищается.
+    // Сверх остатка обрезается, а не отклоняет вход. Нулевой остаток и мягко удалённый товар пропускаются.
+    public function mergeFromSession(): void
+    {
+        if (! auth()->check()) {
+            return;
+        }
+
+        $cart = session(SessionCart::KEY, []);
+
+        if (! is_array($cart)) {
+            session()->forget(SessionCart::KEY);
+
+            return;
+        }
+
+        $ids = [];
+
+        foreach ($cart as $id => $quantity) {
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        $products = Product::query()->whereIn('id', $ids)->get()->keyBy('id');
+
+        DB::transaction(function () use ($cart, $products) {
+            foreach ($cart as $id => $quantity) {
+                if (! is_numeric($id) || ! is_numeric($quantity)) {
+                    continue;
+                }
+
+                $product = $products->get((int) $id);
+                $quantity = (int) $quantity;
+
+                if ($product === null || $quantity < 1 || (int) $product->quantity < 1) {
+                    continue;
+                }
+
+                $line = $this->line($product->id);
+                $next = min((int) ($line->quantity ?? 0) + $quantity, (int) $product->quantity);
+
+                if ($next < 1) {
+                    continue;
+                }
+
+                $line->quantity = $next;
+                $line->save();
+            }
+        });
+
+        session()->forget(SessionCart::KEY);
     }
 
     private function line(int $productId): Basket

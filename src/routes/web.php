@@ -10,6 +10,14 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/search', [CatalogController::class, 'search'])->name('search');
 
+// Статичные страницы: шаблон уже лежит в resources/views/pages, отдельный контроллер не нужен
+Route::view('/pages/about', 'pages.about')->name('pages.about');
+Route::view('/pages/contacts', 'pages.contacts')->name('pages.contacts');
+Route::view('/pages/delivery', 'pages.delivery')->name('pages.delivery');
+Route::view('/pages/privacy', 'pages.privacy')->name('pages.privacy');
+Route::view('/pages/returns', 'pages.returns')->name('pages.returns');
+Route::view('/pages/terms', 'pages.terms')->name('pages.terms');
+
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::patch('/cart/{product}', [CartController::class, 'update'])->name('cart.update');
