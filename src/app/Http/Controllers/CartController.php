@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Cart;
 use App\Http\Requests\StoreCartRequest;
 use App\Http\Requests\UpdateCartRequest;
 use App\Models\Product;
-use App\Services\SessionCart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class CartController extends Controller
 {
-    public function index(SessionCart $cart): View
+    public function index(Cart $cart): View
     {
         $items = $cart->items();
 
@@ -22,21 +22,21 @@ class CartController extends Controller
         ]);
     }
 
-    public function store(StoreCartRequest $request, SessionCart $cart): RedirectResponse
+    public function store(StoreCartRequest $request, Cart $cart): RedirectResponse
     {
         $cart->add($request->integer('product_id'), $request->integer('quantity'));
 
         return back();
     }
 
-    public function update(UpdateCartRequest $request, Product $product, SessionCart $cart): RedirectResponse
+    public function update(UpdateCartRequest $request, Product $product, Cart $cart): RedirectResponse
     {
         $cart->set($product->id, $request->integer('quantity'));
 
         return back();
     }
 
-    public function destroy(Product $product, SessionCart $cart): RedirectResponse
+    public function destroy(Product $product, Cart $cart): RedirectResponse
     {
         $cart->remove($product->id);
 

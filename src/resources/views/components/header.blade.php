@@ -31,14 +31,21 @@
                 </label>
             </form>
 
-            {{-- Личный кабинет --}}
-            <a href="/account" aria-label="Личный кабинет" title="Личный кабинет"
+            {{-- Личный кабинет: гость идёт на вход, вошедший — в профиль --}}
+            <a href="{{ auth()->check() ? route('profile.edit') : route('login') }}" aria-label="Личный кабинет" title="Личный кабинет"
                class="grid h-11 w-11 place-items-center rounded-full text-ink transition-colors hover:bg-soft hover:text-accent">
                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
             </a>
+
+            @auth
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="hidden rounded-btn px-3 py-2 text-sm font-semibold text-ink transition-colors hover:text-accent sm:inline">Выйти</button>
+                </form>
+            @endauth
 
             {{-- Корзина со счётчиком --}}
             <a href="{{ route('cart.index') }}" aria-label="Корзина" title="Корзина"
@@ -66,7 +73,15 @@
             <a href="/catalog" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Каталог товаров</a>
             <a href="/blog" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Блог</a>
             <a href="/pages/contacts" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Контакты</a>
-            <a href="/account" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Личный кабинет</a>
+            @auth
+                <a href="{{ route('profile.edit') }}" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Личный кабинет</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="rounded-btn px-3 py-3 text-left text-[17px] font-medium text-ink hover:bg-soft">Выйти</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="rounded-btn px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft">Войти</a>
+            @endauth
             <form action="{{ route('search') }}" method="GET" class="mt-2">
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Поиск по товарам" class="field">
             </form>

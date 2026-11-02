@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
+use App\Contracts\Cart;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 // Корзина гостя. В сессии только пары product_id => quantity.
 // Название и цена читаются из products в момент показа, чтобы смена цены не зависела от сессии.
-class SessionCart
+class SessionCart implements Cart
 {
     public const KEY = 'cart';
 
